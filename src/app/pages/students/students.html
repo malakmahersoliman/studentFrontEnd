@@ -1,0 +1,100 @@
+<section class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Students</h2>
+      <p class="page-subtitle">Manage students and assign departments</p>
+    </div>
+  </div>
+
+  <form class="form-card form-stack" [formGroup]="studentForm" (ngSubmit)="onSubmit()">
+    <h3>Add Student</h3>
+
+    <div>
+      <label for="name">Name</label>
+      <input id="name" type="text" class="text-input" formControlName="name" />
+
+      @if (studentForm.get('name')?.touched && studentForm.get('name')?.invalid) {
+        <small>Name is required and must be at most 100 characters.</small>
+      }
+    </div>
+
+    <div>
+      <label for="navname">Navname</label>
+      <input id="navname" type="text" class="text-input" formControlName="navname" />
+
+      @if (studentForm.get('navname')?.touched && studentForm.get('navname')?.invalid) {
+        <small>Navname is required and must be at most 100 characters.</small>
+      }
+    </div>
+
+    <div>
+      <label for="departmentId">Department</label>
+      <select id="departmentId" class="text-input" formControlName="departmentId">
+        <option [ngValue]="0" disabled>Select department</option>
+        @for (department of departmentService.departments(); track department.id) {
+          <option [ngValue]="department.id">{{ department.name }}</option>
+        }
+      </select>
+
+      @if (studentForm.get('departmentId')?.touched && studentForm.get('departmentId')?.invalid) {
+        <small>Please select a department.</small>
+      }
+    </div>
+
+    <button
+      type="submit"
+      class="primary-btn"
+      [disabled]="isSaving() || departmentService.departments().length === 0"
+    >
+      @if (isSaving()) {
+        Saving...
+      } @else {
+        Add Student
+      }
+    </button>
+
+    @if (departmentService.departments().length === 0 && !isLoading()) {
+      <p class="state-message">
+        Create a department first on the
+        <a routerLink="/departments" class="text-link">Departments</a> page.
+      </p>
+    }
+
+    @if (successMessage()) {
+      <p class="success-message">{{ successMessage() }}</p>
+    }
+
+    @if (errorMessage()) {
+      <p class="error-message">{{ errorMessage() }}</p>
+    }
+  </form>
+
+  @if (isLoading()) {
+    <div class="loading-block">Loading students...</div>
+  } @else if (studentService.students().length === 0) {
+    <div class="empty-state">
+      <p>No students yet.</p>
+    </div>
+  } @else {
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Navname</th>
+            <th>Department</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (student of studentService.students(); track student.id) {
+            <tr>
+              <td>{{ student.name }}</td>
+              <td>{{ student.navname }}</td>
+              <td>{{ departmentNames().get(student.departmentId) ?? 'Unknown' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

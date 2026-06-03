@@ -1,0 +1,32 @@
+<section class="page-container">
+  <a routerLink="/departments" class="text-link back-link">← Back to departments</a>
+
+  @if (isLoading()) {
+    <div class="loading-block">Loading department...</div>
+  } @else if (errorMessage()) {
+    <p class="error-message">{{ errorMessage() }}</p>
+  } @else if (department(); as currentDepartment) {
+    <div class="page-header">
+      <div>
+        <h2>{{ currentDepartment.name }}</h2>
+        <p class="page-subtitle">Department details</p>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <h3>Students in this department</h3>
+      @if (!currentDepartment.students?.length) {
+        <p class="state-message">No students assigned yet.</p>
+      } @else {
+        <ul class="simple-list">
+          @for (student of currentDepartment.students; track student.id) {
+            <li>
+              <strong>{{ student.name }}</strong>
+              <span>{{ student.navname }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</section>
