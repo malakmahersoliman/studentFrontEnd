@@ -2,72 +2,111 @@
   <div class="page-header">
     <div>
       <h2>Departments</h2>
-      <p class="page-subtitle">Manage academic departments</p>
     </div>
+
+    <button type="button" class="primary-btn" (click)="cancelEdit()">Add Department</button>
   </div>
 
-  <form class="form-card form-stack" (ngSubmit)="onSubmit()">
-    <h3>Add Department</h3>
+  @if (errorMessage()) {
+    <p class="error-message">{{ errorMessage() }}</p>
+  }
 
-    <div>
-      <label for="departmentName">Name</label>
-      <input
-        id="departmentName"
-        type="text"
-        class="text-input"
-        placeholder="Department name"
-        [ngModel]="departmentName()"
-        (ngModelChange)="departmentName.set($event)"
-        name="departmentName"
-        required
-      />
-    </div>
-
-    <button type="submit" class="primary-btn" [disabled]="isSaving()">
-      @if (isSaving()) {
-        Saving...
-      } @else {
-        Add Department
-      }
-    </button>
-
-    @if (successMessage()) {
-      <p class="success-message">{{ successMessage() }}</p>
-    }
-
-    @if (errorMessage()) {
-      <p class="error-message">{{ errorMessage() }}</p>
-    }
-  </form>
+  @if (successMessage()) {
+    <p class="success-message">{{ successMessage() }}</p>
+  }
 
   @if (isLoading()) {
     <div class="loading-block">Loading departments...</div>
-  } @else if (departmentService.departments().length === 0) {
-    <div class="empty-state">
-      <p>No departments yet. Add one above.</p>
-    </div>
   } @else {
-    <div class="toolbar">
-      <input
-        type="search"
-        class="search-input"
-        placeholder="Search departments..."
-        [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event)"
-      />
-      <span class="result-count">
-        Showing {{ filteredDepartments().length }} of
-        {{ departmentService.departments().length }}
-      </span>
-    </div>
+    <div class="page-grid">
+      <article class="form-card form-stack">
+        <h3>{{ isEditing() ? 'Edit Department' : 'Add Department' }}</h3>
 
-    <div class="data-grid">
-      @for (department of filteredDepartments(); track department.id) {
-        <article class="data-card">
-          <h3>{{ department.name }}</h3>
-          <a [routerLink]="['/departments', department.id]" class="text-link">View details</a>
-        </article>
-      }
+        <form (ngSubmit)="onSubmit()">
+          <label for="departmentName">Name</label>
+          <input
+            id="departmentName"
+            type="text"
+            class="text-input"
+            placeholder="Department name"
+            [ngModel]="departmentName()"
+            (ngModelChange)="departmentName.set($event)"
+            name="departmentName"
+            [disabled]="isSaving()"
+            required
+          />
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn" [disabled]="isSaving()">
+              @if (isSaving()) {
+                Saving...
+              } @else if (isEditing()) {
+                Update Department
+              } @else {
+                Save Department
+              }
+            </button>
+
+            @if (isEditing()) {
+              <button
+                type="button"
+                class="secondary-btn"
+                (click)="cancelEdit()"
+                [disabled]="isSaving()"
+              >
+                Cancel
+              </button>
+            }
+          </div>
+        </form>
+      </article>
+
+      <article class="table-card">
+        <h3>Department List</h3>
+
+        @if (departmentService.departments().length === 0) {
+          <div class="empty-state">
+            <p>No departments yet. Add one using the form.</p>
+          </div>
+        } @else {
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (department of departmentService.departments(); track department.id) {
+                <tr>
+                  <td>
+                    <strong>{{ department.name }}</strong>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <a [routerLink]="['/departments', department.id]" class="text-link">View</a>
+                      <button
+                        type="button"
+                        class="action-btn action-btn--edit"
+                        (click)="startEdit(department)"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="action-btn action-btn--delete"
+                        (click)="onDelete(department)"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </article>
     </div>
   }
 </section>

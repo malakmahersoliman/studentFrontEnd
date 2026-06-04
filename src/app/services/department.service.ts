@@ -34,4 +34,24 @@ export class DepartmentService {
       })
     );
   }
+
+  updateDepartment(id: number, data: DepartmentRequest): Observable<Department> {
+    return this.http.put<Department>(`${this.apiUrl}/${id}`, data).pipe(
+      tap((department) => {
+        this.departmentsSignal.update((list) =>
+          list
+            .map((item) => (item.id === department.id ? department : item))
+            .sort((a, b) => a.name.localeCompare(b.name))
+        );
+      })
+    );
+  }
+
+  deleteDepartment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        this.departmentsSignal.update((list) => list.filter((item) => item.id !== id));
+      })
+    );
+  }
 }

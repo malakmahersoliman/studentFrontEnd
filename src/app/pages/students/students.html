@@ -2,72 +2,90 @@
   <div class="page-header">
     <div>
       <h2>Students</h2>
-      <p class="page-subtitle">Manage students and assign departments</p>
     </div>
+
+    <button type="button" class="primary-btn" (click)="cancelEdit()">Add Student</button>
   </div>
 
-  <form class="form-card form-stack" [formGroup]="studentForm" (ngSubmit)="onSubmit()">
-    <h3>Add Student</h3>
+  @if (errorMessage()) {
+    <p class="error-message">{{ errorMessage() }}</p>
+  }
 
-    <div>
-      <label for="name">Name</label>
-      <input id="name" type="text" class="text-input" formControlName="name" />
+  @if (successMessage()) {
+    <p class="success-message">{{ successMessage() }}</p>
+  }
 
-      @if (studentForm.get('name')?.touched && studentForm.get('name')?.invalid) {
-        <small>Name is required and must be at most 100 characters.</small>
-      }
-    </div>
+  <article class="form-card form-stack">
+    <h3>{{ isEditing() ? 'Edit Student' : 'Add Student' }}</h3>
 
-    <div>
-      <label for="navname">Navname</label>
-      <input id="navname" type="text" class="text-input" formControlName="navname" />
+    <form [formGroup]="studentForm" (ngSubmit)="onSubmit()">
+      <div>
+        <label for="name">Name</label>
+        <input id="name" type="text" class="text-input" formControlName="name" [disabled]="isSaving()" />
 
-      @if (studentForm.get('navname')?.touched && studentForm.get('navname')?.invalid) {
-        <small>Navname is required and must be at most 100 characters.</small>
-      }
-    </div>
-
-    <div>
-      <label for="departmentId">Department</label>
-      <select id="departmentId" class="text-input" formControlName="departmentId">
-        <option [ngValue]="0" disabled>Select department</option>
-        @for (department of departmentService.departments(); track department.id) {
-          <option [ngValue]="department.id">{{ department.name }}</option>
+        @if (studentForm.get('name')?.touched && studentForm.get('name')?.invalid) {
+          <small>Name is required and must be at most 100 characters.</small>
         }
-      </select>
+      </div>
 
-      @if (studentForm.get('departmentId')?.touched && studentForm.get('departmentId')?.invalid) {
-        <small>Please select a department.</small>
+      <div>
+        <label for="navname">Navname</label>
+        <input id="navname" type="text" class="text-input" formControlName="navname" [disabled]="isSaving()" />
+
+        @if (studentForm.get('navname')?.touched && studentForm.get('navname')?.invalid) {
+          <small>Navname is required and must be at most 100 characters.</small>
+        }
+      </div>
+
+      <div>
+        <label for="departmentId">Department</label>
+        <select id="departmentId" class="text-input" formControlName="departmentId" [disabled]="isSaving()">
+          <option [ngValue]="0" disabled>Select department</option>
+          @for (department of departmentService.departments(); track department.id) {
+            <option [ngValue]="department.id">{{ department.name }}</option>
+          }
+        </select>
+
+        @if (studentForm.get('departmentId')?.touched && studentForm.get('departmentId')?.invalid) {
+          <small>Please select a department.</small>
+        }
+      </div>
+
+      @if (departmentService.departments().length === 0 && !isLoading()) {
+        <p class="state-message">
+          Create a department first on the
+          <a routerLink="/departments" class="text-link">Departments</a> page.
+        </p>
       }
-    </div>
 
-    <button
-      type="submit"
-      class="primary-btn"
-      [disabled]="isSaving() || departmentService.departments().length === 0"
-    >
-      @if (isSaving()) {
-        Saving...
-      } @else {
-        Add Student
-      }
-    </button>
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="primary-btn"
+          [disabled]="isSaving() || departmentService.departments().length === 0"
+        >
+          @if (isSaving()) {
+            Saving...
+          } @else if (isEditing()) {
+            Update Student
+          } @else {
+            Save Student
+          }
+        </button>
 
-    @if (departmentService.departments().length === 0 && !isLoading()) {
-      <p class="state-message">
-        Create a department first on the
-        <a routerLink="/departments" class="text-link">Departments</a> page.
-      </p>
-    }
-
-    @if (successMessage()) {
-      <p class="success-message">{{ successMessage() }}</p>
-    }
-
-    @if (errorMessage()) {
-      <p class="error-message">{{ errorMessage() }}</p>
-    }
-  </form>
+        @if (isEditing()) {
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="cancelEdit()"
+            [disabled]="isSaving()"
+          >
+            Cancel
+          </button>
+        }
+      </div>
+    </form>
+  </article>
 
   @if (isLoading()) {
     <div class="loading-block">Loading students...</div>
@@ -76,13 +94,15 @@
       <p>No students yet.</p>
     </div>
   } @else {
-    <div class="table-card">
-      <table>
+    <article class="table-card">
+      <h3>Student List</h3>
+      <table class="data-table">
         <thead>
           <tr>
             <th>Name</th>
             <th>Navname</th>
             <th>Department</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -91,10 +111,28 @@
               <td>{{ student.name }}</td>
               <td>{{ student.navname }}</td>
               <td>{{ departmentNames().get(student.departmentId) ?? 'Unknown' }}</td>
+              <td>
+                <div class="table-actions">
+                  <button
+                    type="button"
+                    class="action-btn action-btn--edit"
+                    (click)="startEdit(student)"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="action-btn action-btn--delete"
+                    (click)="onDelete(student)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
             </tr>
           }
         </tbody>
       </table>
-    </div>
+    </article>
   }
 </section>

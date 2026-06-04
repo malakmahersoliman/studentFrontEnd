@@ -3,7 +3,9 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { Department } from '../../models/department.model';
 import { DepartmentService } from '../../services/department.service';
+import { StudentService } from '../../services/student.service';
 
 @Component({
   selector: 'app-departments',
@@ -13,26 +15,16 @@ import { DepartmentService } from '../../services/department.service';
 })
 export class Departments implements OnInit {
   readonly departmentService = inject(DepartmentService);
+  private readonly studentService = inject(StudentService);
 
-  readonly searchTerm = signal('');
   readonly departmentName = signal('');
+  readonly editingDepartmentId = signal<number | null>(null);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
 
-  readonly filteredDepartments = computed(() => {
-    const term = this.searchTerm().trim().toLowerCase();
-    const departments = this.departmentService.departments();
-
-    if (!term) {
-      return departments;
-    }
-
-    return departments.filter((department) =>
-      department.name.toLowerCase().includes(term)
-    );
-  });
+  readonly isEditing = computed(() => this.editingDepartmentId() !== null);
 
   ngOnInit(): void {
     this.loadDepartments();
@@ -59,6 +51,54 @@ export class Departments implements OnInit {
       return;
     }
 
+    const editingId = this.editingDepartmentId();
+
+    if (editingId !== null) {
+      this.updateDepartment(editingId, name);
+      return;
+    }
+
+    this.createDepartment(name);
+  }
+
+  startEdit(department: Department): void {
+    this.editingDepartmentId.set(department.id);
+    this.departmentName.set(department.name);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+  }
+
+  cancelEdit(): void {
+    this.resetForm();
+  }
+
+  onDelete(department: Department): void {
+    const confirmed = confirm(`Delete department "${department.name}"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.departmentService.deleteDepartment(department.id).subscribe({
+      next: () => {
+        this.successMessage.set('Department deleted successfully.');
+
+        if (this.editingDepartmentId() === department.id) {
+          this.resetForm(false);
+        }
+
+        this.studentService.loadStudents().subscribe();
+      },
+      error: () => {
+        this.errorMessage.set('Unable to delete department. Please try again.');
+      },
+    });
+  }
+
+  private createDepartment(name: string): void {
     this.isSaving.set(true);
     this.errorMessage.set('');
     this.successMessage.set('');
@@ -66,13 +106,40 @@ export class Departments implements OnInit {
     this.departmentService.createDepartment({ name }).subscribe({
       next: () => {
         this.successMessage.set('Department created successfully.');
-        this.departmentName.set('');
-        this.isSaving.set(false);
+        this.resetForm(false);
       },
       error: () => {
         this.errorMessage.set('Unable to create department. Please try again.');
         this.isSaving.set(false);
       },
     });
+  }
+
+  private updateDepartment(id: number, name: string): void {
+    this.isSaving.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.departmentService.updateDepartment(id, { name }).subscribe({
+      next: () => {
+        this.successMessage.set('Department updated successfully.');
+        this.resetForm(false);
+      },
+      error: () => {
+        this.errorMessage.set('Unable to update department. Please try again.');
+        this.isSaving.set(false);
+      },
+    });
+  }
+
+  private resetForm(clearMessages = true): void {
+    this.editingDepartmentId.set(null);
+    this.departmentName.set('');
+    this.isSaving.set(false);
+
+    if (clearMessages) {
+      this.errorMessage.set('');
+      this.successMessage.set('');
+    }
   }
 }

@@ -34,4 +34,24 @@ export class StudentService {
       })
     );
   }
+
+  updateStudent(id: number, data: StudentRequest): Observable<Student> {
+    return this.http.put<Student>(`${this.apiUrl}/${id}`, data).pipe(
+      tap((student) => {
+        this.studentsSignal.update((list) =>
+          list
+            .map((item) => (item.id === student.id ? student : item))
+            .sort((a, b) => a.name.localeCompare(b.name))
+        );
+      })
+    );
+  }
+
+  deleteStudent(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        this.studentsSignal.update((list) => list.filter((item) => item.id !== id));
+      })
+    );
+  }
 }
